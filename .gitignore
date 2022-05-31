@@ -110,6 +110,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Dev/yatube_project/.gitignore
+
+.vscode/
+
 # Spyder project settings
 .spyderproject
 .spyproject
