@@ -4,6 +4,7 @@ from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie
 
 from users.models import Profile
 
@@ -16,6 +17,7 @@ POSTS_PER_PAGE = 10
 
 
 @cache_page(20)
+@vary_on_cookie
 def index(request):
     posts = Post.objects.select_related('author', 'group')
     paginator = Paginator(posts, POSTS_PER_PAGE)
