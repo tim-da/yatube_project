@@ -3,7 +3,7 @@
 
 ## Production environment variables
 
-Set these before running in production:
+Set these before running in production (note the `DJANGO_` prefix):
 
 ```bash
 export DJANGO_DEBUG=false
