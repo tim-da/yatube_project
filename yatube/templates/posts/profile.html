@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Профиль: {{ author.get_full_name|default:author.username }}{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2>{{ author.get_full_name|default:author.username }}</h2>
+    <p style="margin-top:8px; color:#555;">Записей: {{ page_obj.paginator.count }}</p>
+    {% if user == author %}
+      <a href="{% url 'posts:post_create' %}" class="btn" style="margin-top:12px;">Новая запись</a>
+    {% endif %}
+  </div>
+
+  {% for post in page_obj %}
+    <div class="card">
+      <div class="meta">
+        {{ post.pub_date|date:"d.m.Y" }}
+        {% if post.group %}· <a href="{% url 'posts:group_list' post.group.slug %}">{{ post.group.title }}</a>{% endif %}
+      </div>
+      <h3 style="margin-top:10px;">
+        <a href="{% url 'posts:post_detail' post.pk %}">{{ post.text|truncatechars:150 }}</a>
+      </h3>
+    </div>
+  {% empty %}
+    <p>Записей пока нет.</p>
+  {% endfor %}
+
+  {% include 'includes/paginator.html' %}
+{% endblock %}

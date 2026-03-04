@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Записи группы: {{ group.title }}{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2>{{ group.title }}</h2>
+    <p style="margin-top:8px; color:#555;">{{ group.description }}</p>
+  </div>
+
+  {% for post in page_obj %}
+    <div class="card">
+      <div class="meta">
+        <a href="{% url 'posts:profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
+        · {{ post.pub_date|date:"d.m.Y" }}
+      </div>
+      <h3 style="margin-top:10px;">
+        <a href="{% url 'posts:post_detail' post.pk %}">{{ post.text|truncatechars:150 }}</a>
+      </h3>
+    </div>
+  {% empty %}
+    <p>В этой группе пока нет записей.</p>
+  {% endfor %}
+
+  {% include 'includes/paginator.html' %}
+{% endblock %}
