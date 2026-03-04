@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import cache_page
 
 from users.models import Profile
 
@@ -14,11 +15,9 @@ User = get_user_model()
 POSTS_PER_PAGE = 10
 
 
+@cache_page(20)
 def index(request):
-    posts = cache.get('index_posts')
-    if posts is None:
-        posts = Post.objects.select_related('author', 'group')
-        cache.set('index_posts', posts, 20)
+    posts = Post.objects.select_related('author', 'group')
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -73,7 +72,7 @@ def post_create(request):
         post = form.save(commit=False)
         post.author = request.user
         post.save()
-        cache.delete('index_posts')
+        cache.clear()
         return redirect('posts:profile', username=request.user.username)
     return render(request, 'posts/create_post.html', {'form': form})
 
@@ -90,7 +89,7 @@ def post_edit(request, post_id):
     )
     if form.is_valid():
         form.save()
-        cache.delete('index_posts')
+        cache.clear()
         return redirect('posts:post_detail', post_id=post_id)
     return render(request, 'posts/create_post.html', {
         'form': form,
