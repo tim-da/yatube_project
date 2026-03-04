@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Yatube{% endblock %}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
+    .navbar { background: #fff; border-bottom: 1px solid #ddd; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .navbar a { text-decoration: none; color: #333; font-weight: bold; font-size: 1.2rem; }
+    .nav-links a { margin-left: 16px; font-weight: normal; font-size: 0.95rem; color: #555; }
+    .nav-links a:hover { color: #000; }
+    .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 20px; margin-bottom: 16px; }
+    .card h3 a { text-decoration: none; color: #222; }
+    .card .meta { font-size: 0.85rem; color: #888; margin-top: 8px; }
+    .btn { display: inline-block; padding: 8px 16px; background: #007bff; color: #fff; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; font-size: 0.95rem; }
+    .btn:hover { background: #0056b3; }
+    .btn-secondary { background: #6c757d; }
+    .btn-secondary:hover { background: #545b62; }
+    .btn-danger { background: #dc3545; }
+    .btn-danger:hover { background: #b02a37; }
+    .pagination { display: flex; gap: 8px; margin-top: 24px; }
+    .pagination a, .pagination span { padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333; background: #fff; }
+    .pagination .current { background: #007bff; color: #fff; border-color: #007bff; }
+    form p { margin-bottom: 12px; }
+    form input, form textarea, form select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem; }
+    form label { display: block; margin-bottom: 4px; font-weight: bold; }
+    .errorlist { color: red; font-size: 0.85rem; list-style: none; }
+    .post-image { max-width: 100%; border-radius: 4px; margin-top: 12px; }
+    .comment { border-top: 1px solid #eee; padding-top: 12px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="{% url 'posts:index' %}">Yatube</a>
+    <div class="nav-links">
+      {% if user.is_authenticated %}
+        <a href="{% url 'posts:follow_index' %}">Подписки</a>
+        <a href="{% url 'posts:post_create' %}">Новая запись</a>
+        <a href="{% url 'posts:profile' user.username %}">{{ user.username }}</a>
+        <a href="{% url 'users:logout' %}">Выйти</a>
+      {% else %}
+        <a href="{% url 'users:signup' %}">Регистрация</a>
+        <a href="{% url 'users:login' %}">Войти</a>
+      {% endif %}
+    </div>
+  </nav>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
