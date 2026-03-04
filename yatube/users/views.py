@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView
 
 from .forms import CreationForm, ProfileForm
+from .models import Profile
 
 
 class SignUpView(CreateView):
@@ -14,7 +15,7 @@ class SignUpView(CreateView):
 
 @login_required
 def edit_profile(request):
-    profile = request.user.profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
     form = ProfileForm(
         request.POST or None,
         files=request.FILES or None,
