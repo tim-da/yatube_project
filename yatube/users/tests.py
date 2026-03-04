@@ -4,7 +4,7 @@ import tempfile
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase, override_settings
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import Profile
@@ -61,8 +61,13 @@ class LoginTest(TestCase):
 
     def test_logout_uses_correct_template(self):
         self.client.force_login(self.user)
+        response = self.client.post(reverse('users:logout'), follow=True)
+        self.assertTemplateUsed(response, 'users/login.html')
+
+    def test_logout_get_not_allowed(self):
+        self.client.force_login(self.user)
         response = self.client.get(reverse('users:logout'))
-        self.assertTemplateUsed(response, 'users/logged_out.html')
+        self.assertEqual(response.status_code, 405)
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)

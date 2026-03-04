@@ -1,4 +1,5 @@
 import os
+from django.core.exceptions import ImproperlyConfigured
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -10,17 +11,19 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'mlkh&+4&sdo%$8*vc&q_byhsv8y%ph28zt2pde^c!r53hrfefs'
-)
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured('Set DJANGO_SECRET_KEY environment variable')
 
 ALLOWED_HOSTS = os.environ.get(
-    'ALLOWED_HOSTS', 'localhost,127.0.0.1'
+    'DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost'
 ).split(',')
 
 
@@ -134,3 +137,20 @@ CACHES = {
 
 # Default primary key field type (Django 3.2+)
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# Security settings for non-development environments.
+if not DEBUG:
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_SECURE_HSTS_SECONDS', 31536000))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get(
+        'DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', 'true'
+    ).lower() in ('1', 'true', 'yes')
+    SECURE_HSTS_PRELOAD = os.environ.get(
+        'DJANGO_SECURE_HSTS_PRELOAD', 'true'
+    ).lower() in ('1', 'true', 'yes')
+    SECURE_SSL_REDIRECT = os.environ.get(
+        'DJANGO_SECURE_SSL_REDIRECT', 'true'
+    ).lower() in ('1', 'true', 'yes')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'

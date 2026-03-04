@@ -11,6 +11,9 @@
     .navbar a { text-decoration: none; color: #333; font-weight: bold; font-size: 1.2rem; }
     .nav-links a { margin-left: 16px; font-weight: normal; font-size: 0.95rem; color: #555; }
     .nav-links a:hover { color: #000; }
+    .logout-form { display: inline; margin-left: 16px; }
+    .btn-link { border: none; background: none; padding: 0; margin: 0; font: inherit; color: #555; cursor: pointer; font-weight: normal; font-size: 0.95rem; }
+    .btn-link:hover { color: #000; }
     .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
     .card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 20px; margin-bottom: 16px; }
     .card h3 a { text-decoration: none; color: #222; }
@@ -40,7 +43,10 @@
         <a href="{% url 'posts:follow_index' %}">Подписки</a>
         <a href="{% url 'posts:post_create' %}">Новая запись</a>
         <a href="{% url 'posts:profile' user.username %}">{{ user.username }}</a>
-        <a href="{% url 'users:logout' %}">Выйти</a>
+        <form method="post" action="{% url 'users:logout' %}" class="logout-form">
+          {% csrf_token %}
+          <button type="submit" class="btn-link">Выйти</button>
+        </form>
       {% else %}
         <a href="{% url 'users:signup' %}">Регистрация</a>
         <a href="{% url 'users:login' %}">Войти</a>
