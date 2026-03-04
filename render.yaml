@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: yatube
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "cd yatube && gunicorn yatube.wsgi"
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "yatube.onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: yatube-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+databases:
+  - name: yatube-db
+    databaseName: yatube
+    user: yatube
