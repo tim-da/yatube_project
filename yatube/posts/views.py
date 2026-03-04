@@ -120,6 +120,18 @@ def follow_index(request):
 
 
 @login_required
+def post_delete(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    if post.author != request.user:
+        return redirect('posts:post_detail', post_id=post_id)
+    if request.method == 'POST':
+        post.delete()
+        cache.clear()
+        return redirect('posts:profile', username=request.user.username)
+    return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     if author != request.user:

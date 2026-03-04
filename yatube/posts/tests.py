@@ -329,6 +329,61 @@ class FollowTest(TestCase):
         self.assertNotIn(self.post, response.context['page_obj'])
 
 
+class PostDeleteTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create_user(username='delete_author')
+        cls.other = User.objects.create_user(username='delete_other')
+
+    def setUp(self):
+        self.post = Post.objects.create(
+            author=self.author,
+            text='Пост для удаления',
+        )
+
+    def test_author_can_delete_post(self):
+        self.client.force_login(self.author)
+        post_id = self.post.pk
+        self.client.post(
+            reverse('posts:post_delete', kwargs={'post_id': post_id})
+        )
+        self.assertFalse(Post.objects.filter(pk=post_id).exists())
+
+    def test_delete_redirects_to_profile(self):
+        self.client.force_login(self.author)
+        response = self.client.post(
+            reverse('posts:post_delete', kwargs={'post_id': self.post.pk})
+        )
+        self.assertRedirects(
+            response,
+            reverse('posts:profile', kwargs={'username': self.author.username}),
+        )
+
+    def test_non_author_cannot_delete_post(self):
+        self.client.force_login(self.other)
+        post_id = self.post.pk
+        self.client.post(
+            reverse('posts:post_delete', kwargs={'post_id': post_id})
+        )
+        self.assertTrue(Post.objects.filter(pk=post_id).exists())
+
+    def test_anonymous_cannot_delete_post(self):
+        post_id = self.post.pk
+        self.client.post(
+            reverse('posts:post_delete', kwargs={'post_id': post_id})
+        )
+        self.assertTrue(Post.objects.filter(pk=post_id).exists())
+
+    def test_get_request_does_not_delete(self):
+        post_id = self.post.pk
+        self.client.force_login(self.author)
+        self.client.get(
+            reverse('posts:post_delete', kwargs={'post_id': post_id})
+        )
+        self.assertTrue(Post.objects.filter(pk=post_id).exists())
+
+
 class CacheTest(TestCase):
     @classmethod
     def setUpClass(cls):

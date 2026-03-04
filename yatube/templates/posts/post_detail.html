@@ -14,8 +14,15 @@
     {% endif %}
     <p style="margin-top:16px; font-size:1.05rem; line-height:1.6;">{{ post.text }}</p>
     {% if user == post.author %}
-      <div style="margin-top:16px;">
+      <div style="margin-top:16px; display:flex; gap:8px;">
         <a href="{% url 'posts:post_edit' post.pk %}" class="btn">Редактировать</a>
+        <form method="post" action="{% url 'posts:post_delete' post.pk %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"
+                  onclick="return confirm('Удалить эту запись? Это действие нельзя отменить.')">
+            Удалить
+          </button>
+        </form>
       </div>
     {% endif %}
   </div>
