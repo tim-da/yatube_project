@@ -4,18 +4,36 @@
 
 {% block content %}
   <div class="card">
-    <h2>{{ author.get_full_name|default:author.username }}</h2>
-    <p style="margin-top:8px; color:#555;">Записей: {{ page_obj.paginator.count }}</p>
-    <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
-      {% if user == author %}
-        <a href="{% url 'posts:post_create' %}" class="btn">Новая запись</a>
-      {% elif user.is_authenticated %}
-        {% if following %}
-          <a href="{% url 'posts:profile_unfollow' author.username %}" class="btn btn-danger">Отписаться</a>
-        {% else %}
-          <a href="{% url 'posts:profile_follow' author.username %}" class="btn">Подписаться</a>
-        {% endif %}
+    <div style="display:flex; gap:20px; align-items:flex-start;">
+      {% if author.profile.avatar %}
+        <img src="{{ author.profile.avatar.url }}" alt="Аватар"
+             style="width:80px; height:80px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+      {% else %}
+        <div style="width:80px; height:80px; border-radius:50%; background:#ddd; flex-shrink:0;
+                    display:flex; align-items:center; justify-content:center; font-size:2rem; color:#999;">
+          {{ author.username|slice:":1"|upper }}
+        </div>
       {% endif %}
+      <div style="flex:1;">
+        <h2>{{ author.get_full_name|default:author.username }}</h2>
+        <p style="margin-top:4px; color:#888; font-size:0.9rem;">@{{ author.username }}</p>
+        {% if author.profile.bio %}
+          <p style="margin-top:8px; color:#555;">{{ author.profile.bio }}</p>
+        {% endif %}
+        <p style="margin-top:8px; color:#888; font-size:0.85rem;">Записей: {{ page_obj.paginator.count }}</p>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+          {% if user == author %}
+            <a href="{% url 'posts:post_create' %}" class="btn">Новая запись</a>
+            <a href="{% url 'users:edit_profile' %}" class="btn btn-secondary">Редактировать профиль</a>
+          {% elif user.is_authenticated %}
+            {% if following %}
+              <a href="{% url 'posts:profile_unfollow' author.username %}" class="btn btn-danger">Отписаться</a>
+            {% else %}
+              <a href="{% url 'posts:profile_follow' author.username %}" class="btn">Подписаться</a>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
 

@@ -1,9 +1,26 @@
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 
+from .forms import CreationForm, ProfileForm
+
 
 class SignUpView(CreateView):
-    form_class = UserCreationForm
+    form_class = CreationForm
     success_url = reverse_lazy('posts:index')
     template_name = 'users/signup.html'
+
+
+@login_required
+def edit_profile(request):
+    profile = request.user.profile
+    form = ProfileForm(
+        request.POST or None,
+        files=request.FILES or None,
+        instance=profile,
+    )
+    if form.is_valid():
+        form.save()
+        return redirect('posts:profile', username=request.user.username)
+    return render(request, 'users/edit_profile.html', {'form': form})

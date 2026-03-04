@@ -17,4 +17,5 @@ urlpatterns = [
         LogoutView.as_view(template_name='users/logged_out.html'),
         name='logout',
     ),
+    path('edit/', views.edit_profile, name='edit_profile'),
 ]
