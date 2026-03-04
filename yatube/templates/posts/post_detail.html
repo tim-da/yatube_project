@@ -9,11 +9,39 @@
       · {{ post.pub_date|date:"d.m.Y H:i" }}
       {% if post.group %}· <a href="{% url 'posts:group_list' post.group.slug %}">{{ post.group.title }}</a>{% endif %}
     </div>
+    {% if post.image %}
+      <img src="{{ post.image.url }}" alt="Изображение" class="post-image">
+    {% endif %}
     <p style="margin-top:16px; font-size:1.05rem; line-height:1.6;">{{ post.text }}</p>
     {% if user == post.author %}
       <div style="margin-top:16px;">
         <a href="{% url 'posts:post_edit' post.pk %}" class="btn">Редактировать</a>
       </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Комментарии ({{ comments|length }})</h3>
+    {% for comment in comments %}
+      <div class="comment">
+        <div class="meta">
+          <a href="{% url 'posts:profile' comment.author.username %}">{{ comment.author.username }}</a>
+          · {{ comment.created|date:"d.m.Y H:i" }}
+        </div>
+        <p style="margin-top:6px;">{{ comment.text }}</p>
+      </div>
+    {% empty %}
+      <p style="margin-top:12px; color:#888;">Комментариев пока нет.</p>
+    {% endfor %}
+
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'posts:add_comment' post.pk %}" style="margin-top:16px;">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn">Отправить</button>
+      </form>
+    {% else %}
+      <p style="margin-top:12px;"><a href="{% url 'users:login' %}">Войдите</a>, чтобы оставить комментарий.</p>
     {% endif %}
   </div>
 {% endblock %}

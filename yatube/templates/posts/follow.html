@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
-{% block title %}Последние обновления на Yatube{% endblock %}
+{% block title %}Подписки{% endblock %}
 
 {% block content %}
-  <h2 style="margin-bottom:16px;">Последние записи</h2>
+  <h2 style="margin-bottom:16px;">Записи авторов, на которых вы подписаны</h2>
   {% for post in page_obj %}
     <div class="card">
       <div class="meta">
@@ -19,7 +19,7 @@
       </h3>
     </div>
   {% empty %}
-    <p>Записей пока нет.</p>
+    <p>Вы пока ни на кого не подписаны. <a href="{% url 'posts:index' %}">Найдите интересных авторов</a>.</p>
   {% endfor %}
 
   {% include 'includes/paginator.html' %}

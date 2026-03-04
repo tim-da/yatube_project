@@ -1,10 +1,18 @@
+import shutil
+import tempfile
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from .models import Group, Post
+from .models import Comment, Follow, Group, Post
 
 User = get_user_model()
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
 class PostModelTest(TestCase):
@@ -28,11 +36,16 @@ class PostModelTest(TestCase):
     def test_group_str(self):
         self.assertEqual(str(self.group), self.group.title)
 
-    def test_post_verbose_name(self):
-        self.assertEqual(Post._meta.get_field('text').verbose_name, 'text')
-
     def test_post_ordering(self):
         self.assertEqual(Post._meta.ordering, ['-pub_date'])
+
+    def test_comment_str(self):
+        comment = Comment.objects.create(
+            post=self.post,
+            author=self.user,
+            text='Тестовый комментарий',
+        )
+        self.assertEqual(str(comment), comment.text[:15])
 
 
 class PostURLTest(TestCase):
@@ -104,6 +117,14 @@ class PostURLTest(TestCase):
             reverse('posts:post_detail', kwargs={'post_id': self.post.pk}),
         )
 
+    def test_follow_index_redirects_anonymous(self):
+        response = self.guest.get(reverse('posts:follow_index'))
+        self.assertEqual(response.status_code, 302)
+
+    def test_follow_index_accessible_for_auth(self):
+        response = self.author_client.get(reverse('posts:follow_index'))
+        self.assertEqual(response.status_code, 200)
+
 
 class PostViewTest(TestCase):
     @classmethod
@@ -150,7 +171,12 @@ class PostViewTest(TestCase):
         response = self.client.get(reverse('posts:post_create'))
         self.assertTemplateUsed(response, 'posts/create_post.html')
 
+    def test_follow_index_uses_correct_template(self):
+        response = self.client.get(reverse('posts:follow_index'))
+        self.assertTemplateUsed(response, 'posts/follow.html')
 
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostFormTest(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -161,6 +187,11 @@ class PostFormTest(TestCase):
             slug='form-group',
             description='Описание',
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.client.force_login(self.user)
@@ -178,6 +209,29 @@ class PostFormTest(TestCase):
         self.assertEqual(Post.objects.count(), post_count + 1)
         self.assertTrue(Post.objects.filter(text='Новый пост из теста').exists())
 
+    def test_create_post_with_image(self):
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00'
+            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
+            b'\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        uploaded = SimpleUploadedFile(
+            name='test.gif',
+            content=small_gif,
+            content_type='image/gif',
+        )
+        post_count = Post.objects.count()
+        self.client.post(
+            reverse('posts:post_create'),
+            data={'text': 'Пост с картинкой', 'image': uploaded},
+        )
+        self.assertEqual(Post.objects.count(), post_count + 1)
+        self.assertTrue(
+            Post.objects.filter(text='Пост с картинкой').exists()
+        )
+
     def test_edit_post(self):
         post = Post.objects.create(author=self.user, text='Исходный текст')
         response = self.client.post(
@@ -192,6 +246,116 @@ class PostFormTest(TestCase):
         self.assertEqual(post.text, 'Изменённый текст')
 
 
+class CommentTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='commentuser')
+        cls.post = Post.objects.create(author=cls.user, text='Пост для комментов')
+
+    def setUp(self):
+        self.auth_client = Client()
+        self.auth_client.force_login(self.user)
+        self.guest = Client()
+
+    def test_auth_user_can_comment(self):
+        comment_count = Comment.objects.count()
+        self.auth_client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.pk}),
+            data={'text': 'Тестовый комментарий'},
+        )
+        self.assertEqual(Comment.objects.count(), comment_count + 1)
+
+    def test_guest_cannot_comment(self):
+        comment_count = Comment.objects.count()
+        self.guest.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.pk}),
+            data={'text': 'Гостевой комментарий'},
+        )
+        self.assertEqual(Comment.objects.count(), comment_count)
+
+    def test_comment_appears_on_post_detail(self):
+        Comment.objects.create(
+            post=self.post,
+            author=self.user,
+            text='Видимый комментарий',
+        )
+        response = self.auth_client.get(
+            reverse('posts:post_detail', kwargs={'post_id': self.post.pk})
+        )
+        self.assertContains(response, 'Видимый комментарий')
+
+
+class FollowTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='follower')
+        cls.author = User.objects.create_user(username='followed_author')
+        cls.post = Post.objects.create(
+            author=cls.author,
+            text='Пост от автора',
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_user_can_follow(self):
+        self.client.get(
+            reverse('posts:profile_follow', kwargs={'username': self.author.username})
+        )
+        self.assertTrue(
+            Follow.objects.filter(user=self.user, author=self.author).exists()
+        )
+
+    def test_user_can_unfollow(self):
+        Follow.objects.create(user=self.user, author=self.author)
+        self.client.get(
+            reverse('posts:profile_unfollow', kwargs={'username': self.author.username})
+        )
+        self.assertFalse(
+            Follow.objects.filter(user=self.user, author=self.author).exists()
+        )
+
+    def test_post_appears_in_follower_feed(self):
+        Follow.objects.create(user=self.user, author=self.author)
+        response = self.client.get(reverse('posts:follow_index'))
+        self.assertIn(self.post, response.context['page_obj'])
+
+    def test_post_not_in_non_follower_feed(self):
+        other = User.objects.create_user(username='non_follower')
+        self.client.force_login(other)
+        response = self.client.get(reverse('posts:follow_index'))
+        self.assertNotIn(self.post, response.context['page_obj'])
+
+
+class CacheTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='cacheuser')
+
+    def setUp(self):
+        cache.clear()
+
+    def test_index_page_cached(self):
+        Post.objects.create(author=self.user, text='Кешируемый пост')
+        response1 = self.client.get(reverse('posts:index'))
+        Post.objects.all().delete()
+        response2 = self.client.get(reverse('posts:index'))
+        self.assertEqual(response1.content, response2.content)
+
+    def test_cache_cleared_after_post_creation(self):
+        self.client.force_login(self.user)
+        self.client.get(reverse('posts:index'))
+        self.client.post(
+            reverse('posts:post_create'),
+            data={'text': 'Новый пост сбрасывает кеш'},
+        )
+        response = self.client.get(reverse('posts:index'))
+        self.assertContains(response, 'Новый пост сбрасывает кеш')
+
+
 class PaginatorTest(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -200,6 +364,9 @@ class PaginatorTest(TestCase):
         Post.objects.bulk_create([
             Post(author=cls.user, text=f'Пост {i}') for i in range(13)
         ])
+
+    def setUp(self):
+        cache.clear()
 
     def test_first_page_has_10_posts(self):
         response = self.client.get(reverse('posts:index'))

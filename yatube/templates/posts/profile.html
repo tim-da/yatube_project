@@ -6,9 +6,17 @@
   <div class="card">
     <h2>{{ author.get_full_name|default:author.username }}</h2>
     <p style="margin-top:8px; color:#555;">Записей: {{ page_obj.paginator.count }}</p>
-    {% if user == author %}
-      <a href="{% url 'posts:post_create' %}" class="btn" style="margin-top:12px;">Новая запись</a>
-    {% endif %}
+    <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+      {% if user == author %}
+        <a href="{% url 'posts:post_create' %}" class="btn">Новая запись</a>
+      {% elif user.is_authenticated %}
+        {% if following %}
+          <a href="{% url 'posts:profile_unfollow' author.username %}" class="btn btn-danger">Отписаться</a>
+        {% else %}
+          <a href="{% url 'posts:profile_follow' author.username %}" class="btn">Подписаться</a>
+        {% endif %}
+      {% endif %}
+    </div>
   </div>
 
   {% for post in page_obj %}
@@ -17,6 +25,9 @@
         {{ post.pub_date|date:"d.m.Y" }}
         {% if post.group %}· <a href="{% url 'posts:group_list' post.group.slug %}">{{ post.group.title }}</a>{% endif %}
       </div>
+      {% if post.image %}
+        <img src="{{ post.image.url }}" alt="Изображение" class="post-image">
+      {% endif %}
       <h3 style="margin-top:10px;">
         <a href="{% url 'posts:post_detail' post.pk %}">{{ post.text|truncatechars:150 }}</a>
       </h3>
