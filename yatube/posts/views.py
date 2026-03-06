@@ -3,13 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from users.models import Profile
 
 from .forms import CommentForm, PostForm
 from .models import Follow, Group, Post
-
-User = get_user_model()
 
 POSTS_PER_PAGE = 10
 
