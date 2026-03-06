@@ -285,6 +285,12 @@ class CommentTest(TestCase):
         )
         self.assertContains(response, 'Видимый комментарий')
 
+    def test_comment_get_not_allowed(self):
+        response = self.auth_client.get(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.pk})
+        )
+        self.assertEqual(response.status_code, 405)
+
 
 class FollowTest(TestCase):
     @classmethod

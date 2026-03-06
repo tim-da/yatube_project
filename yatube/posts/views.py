@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
+from django.template.loader import render_to_string
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -13,14 +14,40 @@ from .models import Follow, Group, Post
 User = get_user_model()
 
 POSTS_PER_PAGE = 10
+INDEX_CACHE_TIMEOUT = 20
+INDEX_CACHE_VERSION_KEY = 'index_page_cache_version'
+
+
+def _get_index_cache_version():
+    return cache.get(INDEX_CACHE_VERSION_KEY, 1)
+
+
+def _bump_index_cache_version():
+    if cache.add(INDEX_CACHE_VERSION_KEY, 1):
+        return
+    try:
+        cache.incr(INDEX_CACHE_VERSION_KEY)
+    except ValueError:
+        current_version = cache.get(INDEX_CACHE_VERSION_KEY, 1)
+        cache.set(INDEX_CACHE_VERSION_KEY, current_version + 1)
 
 
 def index(request):
-    posts = Post.objects.select_related('author', 'group')
-    paginator = Paginator(posts, POSTS_PER_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'posts/index.html', {'page_obj': page_obj})
+    page_number = request.GET.get('page', '1')
+    cache_version = _get_index_cache_version()
+    cache_key = f'index_post_list_v{cache_version}_p{page_number}'
+    posts_fragment = cache.get(cache_key)
+    if posts_fragment is None:
+        posts = Post.objects.select_related('author', 'group')
+        paginator = Paginator(posts, POSTS_PER_PAGE)
+        page_obj = paginator.get_page(page_number)
+        posts_fragment = render_to_string(
+            'posts/includes/index_post_list.html',
+            {'page_obj': page_obj},
+            request=request,
+        )
+        cache.set(cache_key, posts_fragment, INDEX_CACHE_TIMEOUT)
+    return render(request, 'posts/index.html', {'posts_fragment': posts_fragment})
 
 
 def group_posts(request, slug):
@@ -76,7 +103,7 @@ def post_create(request):
         post = form.save(commit=False)
         post.author = request.user
         post.save()
-        cache.clear()
+        _bump_index_cache_version()
         return redirect('posts:profile', username=request.user.username)
     return render(request, 'posts/create_post.html', {'form': form})
 
@@ -93,7 +120,7 @@ def post_edit(request, post_id):
     )
     if form.is_valid():
         form.save()
-        cache.clear()
+        _bump_index_cache_version()
         return redirect('posts:post_detail', post_id=post_id)
     return render(request, 'posts/create_post.html', {
         'form': form,
@@ -103,9 +130,10 @@ def post_edit(request, post_id):
 
 
 @login_required
+@require_POST
 def add_comment(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    form = CommentForm(request.POST or None)
+    form = CommentForm(request.POST)
     if form.is_valid():
         comment = form.save(commit=False)
         comment.author = request.user
@@ -132,7 +160,7 @@ def post_delete(request, post_id):
         return redirect('posts:post_detail', post_id=post_id)
     if request.method == 'POST':
         post.delete()
-        cache.clear()
+        _bump_index_cache_version()
         return redirect('posts:profile', username=request.user.username)
     return redirect('posts:post_detail', post_id=post_id)
 
