@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}{{ author.username }} – Yatube{% endblock %}
+{% block content %}
+<h2>{{ author.username }}</h2>
+{% if user.is_authenticated and author != user %}
+  {% if following %}
+    <a href="{% url 'posts:unfollow' author.username %}" class="btn btn-secondary">Unfollow</a>
+  {% else %}
+    <a href="{% url 'posts:follow' author.username %}" class="btn btn-primary">Follow</a>
+  {% endif %}
+{% endif %}
+<hr>
+{% for post in posts %}
+  <div class="post">
+    <div class="post-meta">{{ post.pub_date|date:"N j, Y" }}</div>
+    {% if post.image %}
+      <img src="{{ post.image.url }}" alt="post image">
+    {% endif %}
+    <p>{{ post.text }}</p>
+    <div>
+      <span class="stars-badge">&#9733; {{ post.total_stars }}</span>
+      <a href="{% url 'posts:post_detail' post.id %}" class="btn btn-secondary" style="margin-left:0.5rem;">View</a>
+    </div>
+  </div>
+{% empty %}
+  <p>No posts yet.</p>
+{% endfor %}
+{% endblock %}

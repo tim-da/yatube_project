@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Post by {{ post.author.username }}{% endblock %}
+{% block content %}
+<div class="post">
+  <div class="post-meta">
+    <a href="{% url 'posts:profile' post.author.username %}">{{ post.author.username }}</a>
+    &middot; {{ post.pub_date|date:"N j, Y H:i" }}
+  </div>
+  {% if post.image %}
+    <img src="{{ post.image.url }}" alt="post image">
+  {% endif %}
+  <p>{{ post.text }}</p>
+  <div>
+    <span class="stars-badge">&#9733; {{ post.total_stars }}</span>
+    {% if user.is_authenticated and post.author != user %}
+      {% if user_liked %}
+        <form method="post" action="{% url 'posts:unlike_post' post.id %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary">&#9733; Unlike</button>
+        </form>
+      {% else %}
+        <form method="post" action="{% url 'posts:like_post' post.id %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary"
+            {% if user.profile.stars == 0 %}disabled title="No stars left"{% endif %}>
+            &#9733; Like (costs 1 star)
+          </button>
+        </form>
+        {% if user.profile.stars == 0 %}
+          <span class="error">You have no stars left.</span>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+<a href="{% url 'posts:index' %}">&larr; Back</a>
+{% endblock %}
