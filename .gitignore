@@ -62,6 +62,7 @@ db.sqlite3
 db.sqlite3-journal
 staticfiles/
 media/
+.DS_Store
 
 # Flask stuff:
 instance/
@@ -129,3 +130,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Local generated docs/assets
+output/pdf/*.pdf
+tmp/pdfs/*.png
