@@ -32,4 +32,4 @@ def edit_profile(request):
 @require_POST
 def logout_view(request):
     logout(request)
-    return redirect('users:login')
+    return render(request, 'users/logged_out.html')
