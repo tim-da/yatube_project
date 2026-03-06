@@ -127,6 +127,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Auth
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'posts:index'
+LOGOUT_REDIRECT_URL = 'posts:index'
 
 # Cache
 CACHES = {
@@ -136,7 +137,7 @@ CACHES = {
 }
 
 # Default primary key field type (Django 3.2+)
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Security settings for non-development environments.
 if not DEBUG:
