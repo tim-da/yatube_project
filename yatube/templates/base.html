@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Yatube{% endblock %}</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 1rem; }
+    nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ccc; }
+    nav a { text-decoration: none; color: #333; }
+    .post { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
+    .post-meta { color: #888; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .stars-badge { display: inline-block; background: #ffd700; color: #333; border-radius: 12px; padding: 2px 10px; font-size: 0.85rem; font-weight: bold; }
+    .btn { display: inline-block; padding: 0.4rem 0.9rem; border-radius: 4px; border: none; cursor: pointer; text-decoration: none; font-size: 0.9rem; }
+    .btn-primary { background: #0070f3; color: white; }
+    .btn-danger { background: #e00; color: white; }
+    .btn-secondary { background: #eee; color: #333; }
+    form input, form textarea { width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; box-sizing: border-box; }
+    .error { color: red; font-size: 0.85rem; }
+    .post img { max-width: 100%; border-radius: 4px; margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="{% url 'posts:index' %}"><strong>Yatube</strong></a>
+  {% if user.is_authenticated %}
+    <a href="{% url 'posts:post_create' %}">+ Post</a>
+    <a href="{% url 'posts:profile' user.username %}">{{ user.username }}</a>
+    <span>&#9733; {{ user.profile.stars }}</span>
+    <a href="{% url 'users:logout' %}">Logout</a>
+  {% else %}
+    <a href="{% url 'users:login' %}">Login</a>
+    <a href="{% url 'users:register' %}">Register</a>
+  {% endif %}
+</nav>
+{% block content %}{% endblock %}
+</body>
+</html>
