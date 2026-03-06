@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from users.models import Profile
 
@@ -36,7 +37,11 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    Profile.objects.get_or_create(user=author)
+    profile = None
+    try:
+        profile = author.profile
+    except Profile.DoesNotExist:
+        pass
     posts = author.posts.select_related('group')
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
@@ -47,6 +52,7 @@ def profile(request, username):
     )
     return render(request, 'posts/profile.html', {
         'author': author,
+        'profile': profile,
         'page_obj': page_obj,
         'following': following,
     })
@@ -132,6 +138,7 @@ def post_delete(request, post_id):
 
 
 @login_required
+@require_POST
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     if author != request.user:
@@ -140,6 +147,7 @@ def profile_follow(request, username):
 
 
 @login_required
+@require_POST
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     Follow.objects.filter(user=request.user, author=author).delete()

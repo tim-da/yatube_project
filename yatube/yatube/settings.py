@@ -19,6 +19,8 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY and DEBUG:
+    SECRET_KEY = 'dev-only-insecure-secret-key-change-me'
 if not SECRET_KEY:
     raise ImproperlyConfigured('Set DJANGO_SECRET_KEY environment variable')
 

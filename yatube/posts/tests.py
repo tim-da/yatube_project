@@ -301,7 +301,7 @@ class FollowTest(TestCase):
         self.client.force_login(self.user)
 
     def test_user_can_follow(self):
-        self.client.get(
+        self.client.post(
             reverse('posts:profile_follow', kwargs={'username': self.author.username})
         )
         self.assertTrue(
@@ -310,12 +310,25 @@ class FollowTest(TestCase):
 
     def test_user_can_unfollow(self):
         Follow.objects.create(user=self.user, author=self.author)
-        self.client.get(
+        self.client.post(
             reverse('posts:profile_unfollow', kwargs={'username': self.author.username})
         )
         self.assertFalse(
             Follow.objects.filter(user=self.user, author=self.author).exists()
         )
+
+    def test_follow_get_not_allowed(self):
+        response = self.client.get(
+            reverse('posts:profile_follow', kwargs={'username': self.author.username})
+        )
+        self.assertEqual(response.status_code, 405)
+
+    def test_unfollow_get_not_allowed(self):
+        Follow.objects.create(user=self.user, author=self.author)
+        response = self.client.get(
+            reverse('posts:profile_unfollow', kwargs={'username': self.author.username})
+        )
+        self.assertEqual(response.status_code, 405)
 
     def test_post_appears_in_follower_feed(self):
         Follow.objects.create(user=self.user, author=self.author)

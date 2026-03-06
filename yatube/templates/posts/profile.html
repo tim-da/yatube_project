@@ -5,8 +5,8 @@
 {% block content %}
   <div class="card">
     <div style="display:flex; gap:20px; align-items:flex-start;">
-      {% if author.profile.avatar %}
-        <img src="{{ author.profile.avatar.url }}" alt="Аватар"
+      {% if profile and profile.avatar %}
+        <img src="{{ profile.avatar.url }}" alt="Аватар"
              style="width:80px; height:80px; border-radius:50%; object-fit:cover; flex-shrink:0;">
       {% else %}
         <div style="width:80px; height:80px; border-radius:50%; background:#ddd; flex-shrink:0;
@@ -17,8 +17,8 @@
       <div style="flex:1;">
         <h2>{{ author.get_full_name|default:author.username }}</h2>
         <p style="margin-top:4px; color:#888; font-size:0.9rem;">@{{ author.username }}</p>
-        {% if author.profile.bio %}
-          <p style="margin-top:8px; color:#555;">{{ author.profile.bio }}</p>
+        {% if profile and profile.bio %}
+          <p style="margin-top:8px; color:#555;">{{ profile.bio }}</p>
         {% endif %}
         <p style="margin-top:8px; color:#888; font-size:0.85rem;">Записей: {{ page_obj.paginator.count }}</p>
         <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
@@ -27,9 +27,15 @@
             <a href="{% url 'users:edit_profile' %}" class="btn btn-secondary">Редактировать профиль</a>
           {% elif user.is_authenticated %}
             {% if following %}
-              <a href="{% url 'posts:profile_unfollow' author.username %}" class="btn btn-danger">Отписаться</a>
+              <form method="post" action="{% url 'posts:profile_unfollow' author.username %}" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Отписаться</button>
+              </form>
             {% else %}
-              <a href="{% url 'posts:profile_follow' author.username %}" class="btn">Подписаться</a>
+              <form method="post" action="{% url 'posts:profile_follow' author.username %}" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="btn">Подписаться</button>
+              </form>
             {% endif %}
           {% endif %}
         </div>
