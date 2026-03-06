@@ -70,24 +70,18 @@ def post_create(request):
         post = form.save(commit=False)
         post.author = request.user
         post.save()
-        cache.clear()
-        return redirect('posts:profile', username=request.user.username)
-    return render(request, 'posts/create_post.html', {'form': form})
+from django.core.cache import cache
 
+CACHE_KEY_INDEX = 'index_page_cache'
 
-@login_required
-def post_edit(request, post_id):
-    post = get_object_or_404(Post, pk=post_id)
-    if post.author != request.user:
-        return redirect('posts:post_detail', post_id=post_id)
-    form = PostForm(
-        request.POST or None,
-        files=request.FILES or None,
-        instance=post,
-    )
-    if form.is_valid():
-        form.save()
-        cache.clear()
+# In post_create:
+cache.delete(CACHE_KEY_INDEX)
+
+# In post_edit:
+cache.delete(CACHE_KEY_INDEX)
+
+# In post_delete:
+cache.delete(CACHE_KEY_INDEX)
         return redirect('posts:post_detail', post_id=post_id)
     return render(request, 'posts/create_post.html', {
         'form': form,
