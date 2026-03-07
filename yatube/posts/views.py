@@ -212,7 +212,7 @@ def add_comment(request, post_id):
 def authors(request):
     users = (
         User.objects
-        .prefetch_related('profile')
+        .select_related('profile')
         .annotate(total_stars=Count('posts__likes'))
         .order_by('-total_stars', 'username')
     )
