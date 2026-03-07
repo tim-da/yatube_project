@@ -34,11 +34,13 @@ def _bump_index_cache_version():
 
 
 def _safe_next_url(request, fallback):
-    """Return referer if it's on the same host, otherwise fallback."""
+    """Return referer if it's on the same host with a safe scheme, otherwise fallback."""
     referer = request.META.get('HTTP_REFERER', '')
     if referer:
         parsed = urlparse(referer)
-        if not parsed.netloc or parsed.netloc == request.get_host():
+        same_host = not parsed.netloc or parsed.netloc == request.get_host()
+        safe_scheme = parsed.scheme in ('', 'http', 'https')
+        if same_host and safe_scheme:
             return referer
     return fallback
 
@@ -243,10 +245,10 @@ def like_post(request, post_id):
         return redirect(_safe_next_url(request, f'/posts/{post_id}/'))
     changed = False
     with transaction.atomic():
-        is_following = Follow.objects.select_for_update().filter(
+        follow = Follow.objects.select_for_update().filter(
             user=request.user, author=post.author
-        ).exists()
-        if not is_following:
+        ).first()
+        if not follow:
             return redirect(_safe_next_url(request, f'/posts/{post_id}/'))
         profile = Profile.objects.select_for_update().get(user=request.user)
         already_liked = Like.objects.filter(user=request.user, post=post).exists()
