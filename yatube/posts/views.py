@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from users.models import Profile
 
 from .forms import CommentForm, PostForm
-from .models import Follow, Group, Post
+from .models import Follow, Group, Like, Post
 
 User = get_user_model()
 
@@ -84,10 +84,21 @@ def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     comments = post.comments.select_related('author')
     form = CommentForm()
+    user_liked = (
+        request.user.is_authenticated
+        and Like.objects.filter(user=request.user, post=post).exists()
+    )
+    is_following = (
+        request.user.is_authenticated
+        and post.author != request.user
+        and Follow.objects.filter(user=request.user, author=post.author).exists()
+    )
     return render(request, 'posts/post_detail.html', {
         'post': post,
         'comments': comments,
         'form': form,
+        'user_liked': user_liked,
+        'is_following': is_following,
     })
 
 
@@ -157,6 +168,38 @@ def post_delete(request, post_id):
         post.delete()
         _bump_index_cache_version()
         return redirect('posts:profile', username=request.user.username)
+    return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+@require_POST
+def like_post(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    if post.author == request.user:
+        return redirect('posts:post_detail', post_id=post_id)
+    is_following = Follow.objects.filter(
+        user=request.user, author=post.author
+    ).exists()
+    if not is_following:
+        return redirect('posts:post_detail', post_id=post_id)
+    profile = request.user.profile
+    already_liked = Like.objects.filter(user=request.user, post=post).exists()
+    if not already_liked and profile.stars > 0:
+        Like.objects.create(user=request.user, post=post)
+        profile.stars -= 1
+        profile.save()
+    return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+@require_POST
+def unlike_post(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    profile = request.user.profile
+    deleted, _ = Like.objects.filter(user=request.user, post=post).delete()
+    if deleted:
+        profile.stars += 1
+        profile.save()
     return redirect('posts:post_detail', post_id=post_id)
 
 

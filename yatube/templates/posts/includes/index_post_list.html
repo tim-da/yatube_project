@@ -11,6 +11,7 @@
     <h3 style="margin-top:10px;">
       <a href="{% url 'posts:post_detail' post.pk %}">{{ post.text|truncatechars:150 }}</a>
     </h3>
+    <div style="margin-top:8px; color:#b8860b; font-weight:bold;">&#9733; {{ post.likes.count }}</div>
   </div>
 {% empty %}
   <p>Записей пока нет.</p>

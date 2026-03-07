@@ -13,8 +13,27 @@
       <img src="{{ post.image.url }}" alt="Изображение" class="post-image">
     {% endif %}
     <p style="margin-top:16px; font-size:1.05rem; line-height:1.6;">{{ post.text }}</p>
-    {% if user == post.author %}
-      <div style="margin-top:16px; display:flex; gap:8px;">
+    <div style="margin-top:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <span style="font-size:1.1rem; font-weight:bold; color:#b8860b;">&#9733; {{ post.likes.count }}</span>
+      {% if user.is_authenticated and user != post.author %}
+        {% if user_liked %}
+          <form method="post" action="{% url 'posts:unlike_post' post.pk %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">&#9733; Убрать лайк</button>
+          </form>
+        {% elif is_following %}
+          <form method="post" action="{% url 'posts:like_post' post.pk %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="btn"
+              {% if user.profile.stars == 0 %}disabled title="Звёзды закончились"{% endif %}>
+              &#9733; Лайк (−1 звезда)
+            </button>
+          </form>
+        {% else %}
+          <span style="color:#888; font-size:0.9rem;">Подпишитесь на автора, чтобы ставить лайки</span>
+        {% endif %}
+      {% endif %}
+      {% if user == post.author %}
         <a href="{% url 'posts:post_edit' post.pk %}" class="btn">Редактировать</a>
         <form method="post" action="{% url 'posts:post_delete' post.pk %}" style="margin:0;">
           {% csrf_token %}
@@ -23,8 +42,8 @@
             Удалить
           </button>
         </form>
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
 
   <div class="card">
