@@ -41,10 +41,12 @@
 </head>
 <body>
 {% if user.is_authenticated %}
+  {% with full_name=user.get_full_name %}
   <div class="stars-banner{% if user.profile.stars == 0 %} empty{% endif %}">
-    <span>{{ user.get_full_name|default:user.username }}{% if user.get_full_name %} ({{ user.username }}){% endif %}</span>
+    <span>{% if full_name %}{{ full_name }} ({{ user.username }}){% else %}{{ user.username }}{% endif %}</span>
     <span>&#9733; Осталось звёзд: <span class="stars-count">{{ user.profile.stars }}</span>{% if user.profile.stars == 0 %}&nbsp;— звёзды закончились{% endif %}</span>
   </div>
+  {% endwith %}
 {% endif %}
   <nav class="navbar">
     <a href="{% url 'posts:index' %}">Yatube</a>
