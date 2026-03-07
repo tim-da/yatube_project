@@ -33,9 +33,19 @@
     .errorlist { color: red; font-size: 0.85rem; list-style: none; }
     .post-image { max-width: 100%; border-radius: 4px; margin-top: 12px; }
     .comment { border-top: 1px solid #eee; padding-top: 12px; margin-top: 12px; }
+    .stars-banner { background: #fffbea; border-bottom: 1px solid #f0d000; padding: 6px 24px; font-size: 0.95rem; font-weight: bold; color: #7a5c00; text-align: center; }
+    .stars-banner .stars-count { font-size: 1.1rem; color: #b8860b; }
+    .stars-banner.empty { background: #fff0f0; border-color: #dc3545; color: #a00; }
+    .stars-banner.empty .stars-count { color: #dc3545; }
   </style>
 </head>
 <body>
+{% if user.is_authenticated %}
+  <div class="stars-banner{% if user.profile.stars == 0 %} empty{% endif %}">
+    &#9733; Осталось звёзд: <span class="stars-count">{{ user.profile.stars }}</span>
+    {% if user.profile.stars == 0 %}&nbsp;— звёзды закончились, лайки недоступны{% endif %}
+  </div>
+{% endif %}
   <nav class="navbar">
     <a href="{% url 'posts:index' %}">Yatube</a>
     <div class="nav-links">
