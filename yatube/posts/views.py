@@ -209,6 +209,19 @@ def add_comment(request, post_id):
     return redirect('posts:post_detail', post_id=post_id)
 
 
+def authors(request):
+    users = (
+        User.objects
+        .select_related('profile')
+        .annotate(total_stars=Count('posts__likes'))
+        .order_by('-total_stars', 'username')
+    )
+    paginator = Paginator(users, POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'posts/authors.html', {'page_obj': page_obj})
+
+
 def feed(request):
     posts = (
         Post.objects
