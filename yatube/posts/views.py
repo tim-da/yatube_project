@@ -74,6 +74,7 @@ def index(request):
             Post.objects
             .select_related('author', 'group')
             .annotate(likes_count=Count('likes'))
+            .order_by('-likes_count', 'author__last_name')
         )
         paginator = Paginator(posts, POSTS_PER_PAGE)
         page_obj = paginator.get_page(page_number)
@@ -94,7 +95,7 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    posts = group.posts.select_related('author').annotate(likes_count=Count('likes'))
+    posts = group.posts.select_related('author').annotate(likes_count=Count('likes')).order_by('-likes_count', 'author__last_name')
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -115,7 +116,7 @@ def profile(request, username):
         author_profile = author.profile
     except Profile.DoesNotExist:
         pass
-    posts = author.posts.select_related('group').annotate(likes_count=Count('likes'))
+    posts = author.posts.select_related('group').annotate(likes_count=Count('likes')).order_by('-likes_count')
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -212,7 +213,7 @@ def add_comment(request, post_id):
 def follow_index(request):
     posts = Post.objects.filter(
         author__following__user=request.user
-    ).select_related('author', 'group').annotate(likes_count=Count('likes'))
+    ).select_related('author', 'group').annotate(likes_count=Count('likes')).order_by('-likes_count', 'author__last_name')
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
