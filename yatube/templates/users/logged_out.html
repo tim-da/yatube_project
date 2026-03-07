@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block title %}Выход{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2>Вы вышли из системы</h2>
+    <p style="margin-top:8px;"><a href="{% url 'users:login' %}">Войти снова</a></p>
+  </div>
+{% endblock %}

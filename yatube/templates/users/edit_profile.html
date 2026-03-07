@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактировать профиль{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2>Редактировать профиль</h2>
+    <form method="post" enctype="multipart/form-data" style="margin-top:16px;">
+      {% csrf_token %}
+      {% if request.user.profile.avatar %}
+        <div style="margin-bottom:12px;">
+          <img src="{{ request.user.profile.avatar.url }}" alt="Аватар"
+               style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
+          <p style="font-size:0.85rem; color:#888; margin-top:4px;">Текущий аватар</p>
+        </div>
+      {% endif %}
+      {{ form.as_p }}
+      <button type="submit" class="btn">Сохранить</button>
+      <a href="{% url 'posts:profile' request.user.username %}"
+         class="btn btn-secondary" style="margin-left:8px;">Отмена</a>
+    </form>
+  </div>
+{% endblock %}
