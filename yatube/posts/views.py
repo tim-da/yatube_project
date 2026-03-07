@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
@@ -31,10 +33,39 @@ def _bump_index_cache_version():
     cache.set(INDEX_CACHE_VERSION_KEY, current_version + 1)
 
 
+def _safe_next_url(request, fallback):
+    """Return referer if it's on the same host, otherwise fallback."""
+    referer = request.META.get('HTTP_REFERER', '')
+    if referer:
+        parsed = urlparse(referer)
+        if not parsed.netloc or parsed.netloc == request.get_host():
+            return referer
+    return fallback
+
+
+def _like_context(request, page_obj):
+    """Return liked_post_ids, followed_author_ids, viewer_profile for current user."""
+    if not request.user.is_authenticated:
+        return set(), set(), None
+    post_ids = [p.pk for p in page_obj]
+    author_ids = list({p.author_id for p in page_obj})
+    liked_post_ids = set(
+        Like.objects.filter(user=request.user, post_id__in=post_ids)
+        .values_list('post_id', flat=True)
+    )
+    followed_author_ids = set(
+        Follow.objects.filter(user=request.user, author_id__in=author_ids)
+        .values_list('author_id', flat=True)
+    )
+    viewer_profile = Profile.objects.filter(user=request.user).first()
+    return liked_post_ids, followed_author_ids, viewer_profile
+
+
 def index(request):
     page_number = request.GET.get('page', '1')
     cache_version = _get_index_cache_version()
-    cache_key = f'index_post_list_v{cache_version}_p{page_number}'
+    user_key = request.user.pk if request.user.is_authenticated else 'anon'
+    cache_key = f'index_post_list_v{cache_version}_p{page_number}_u{user_key}'
     posts_fragment = cache.get(cache_key)
     if posts_fragment is None:
         posts = (
@@ -44,9 +75,15 @@ def index(request):
         )
         paginator = Paginator(posts, POSTS_PER_PAGE)
         page_obj = paginator.get_page(page_number)
+        liked_post_ids, followed_author_ids, viewer_profile = _like_context(request, page_obj)
         posts_fragment = render_to_string(
             'posts/includes/index_post_list.html',
-            {'page_obj': page_obj},
+            {
+                'page_obj': page_obj,
+                'liked_post_ids': liked_post_ids,
+                'followed_author_ids': followed_author_ids,
+                'viewer_profile': viewer_profile,
+            },
             request=request,
         )
         cache.set(cache_key, posts_fragment, INDEX_CACHE_TIMEOUT)
@@ -59,17 +96,21 @@ def group_posts(request, slug):
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    liked_post_ids, followed_author_ids, viewer_profile = _like_context(request, page_obj)
     return render(request, 'posts/group_list.html', {
         'group': group,
         'page_obj': page_obj,
+        'liked_post_ids': liked_post_ids,
+        'followed_author_ids': followed_author_ids,
+        'viewer_profile': viewer_profile,
     })
 
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    profile = None
+    author_profile = None
     try:
-        profile = author.profile
+        author_profile = author.profile
     except Profile.DoesNotExist:
         pass
     posts = author.posts.select_related('group').annotate(likes_count=Count('likes'))
@@ -80,11 +121,15 @@ def profile(request, username):
         request.user.is_authenticated
         and Follow.objects.filter(user=request.user, author=author).exists()
     )
+    liked_post_ids, followed_author_ids, viewer_profile = _like_context(request, page_obj)
     return render(request, 'posts/profile.html', {
         'author': author,
-        'profile': profile,
+        'profile': author_profile,
         'page_obj': page_obj,
         'following': following,
+        'liked_post_ids': liked_post_ids,
+        'followed_author_ids': followed_author_ids,
+        'viewer_profile': viewer_profile,
     })
 
 
@@ -169,7 +214,13 @@ def follow_index(request):
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'posts/follow.html', {'page_obj': page_obj})
+    liked_post_ids, followed_author_ids, viewer_profile = _like_context(request, page_obj)
+    return render(request, 'posts/follow.html', {
+        'page_obj': page_obj,
+        'liked_post_ids': liked_post_ids,
+        'followed_author_ids': followed_author_ids,
+        'viewer_profile': viewer_profile,
+    })
 
 
 @login_required
@@ -189,14 +240,14 @@ def post_delete(request, post_id):
 def like_post(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if post.author == request.user:
-        return redirect('posts:post_detail', post_id=post_id)
+        return redirect(_safe_next_url(request, f'/posts/{post_id}/'))
     changed = False
     with transaction.atomic():
         is_following = Follow.objects.select_for_update().filter(
             user=request.user, author=post.author
         ).exists()
         if not is_following:
-            return redirect('posts:post_detail', post_id=post_id)
+            return redirect(_safe_next_url(request, f'/posts/{post_id}/'))
         profile = Profile.objects.select_for_update().get(user=request.user)
         already_liked = Like.objects.filter(user=request.user, post=post).exists()
         if not already_liked and profile.stars > 0:
@@ -210,7 +261,7 @@ def like_post(request, post_id):
                 changed = True
     if changed:
         _bump_index_cache_version()
-    return redirect('posts:post_detail', post_id=post_id)
+    return redirect(_safe_next_url(request, f'/posts/{post_id}/'))
 
 
 @login_required
@@ -227,7 +278,7 @@ def unlike_post(request, post_id):
             changed = True
     if changed:
         _bump_index_cache_version()
-    return redirect('posts:post_detail', post_id=post_id)
+    return redirect(_safe_next_url(request, f'/posts/{post_id}/'))
 
 
 @login_required

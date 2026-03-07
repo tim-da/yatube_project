@@ -20,6 +20,24 @@
       <h3 style="margin-top:10px;">
         <a href="{% url 'posts:post_detail' post.pk %}">{{ post.text|truncatechars:150 }}</a>
       </h3>
+      {% if user.is_authenticated and user != post.author %}
+        <div style="margin-top:10px;">
+          {% if post.pk in liked_post_ids %}
+            <form method="post" action="{% url 'posts:unlike_post' post.pk %}" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-secondary btn-sm">&#9733; Убрать лайк</button>
+            </form>
+          {% elif post.author_id in followed_author_ids %}
+            <form method="post" action="{% url 'posts:like_post' post.pk %}" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm"
+                {% if viewer_profile and viewer_profile.stars == 0 %}disabled title="Звёзды закончились"{% endif %}>
+                &#9733; Лайк
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
   {% empty %}
     <p>Вы пока ни на кого не подписаны. <a href="{% url 'posts:index' %}">Найдите интересных авторов</a>.</p>
