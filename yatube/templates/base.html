@@ -18,15 +18,24 @@
     form input, form textarea { width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; box-sizing: border-box; }
     .error { color: red; font-size: 0.85rem; }
     .post img { max-width: 100%; border-radius: 4px; margin: 0.5rem 0; }
+    .stars-banner { background: #fffbea; border-bottom: 1px solid #f0d000; padding: 0.5rem 1rem; text-align: center; font-size: 1rem; font-weight: bold; color: #7a5c00; }
+    .stars-banner .stars-count { font-size: 1.3rem; color: #b8860b; }
+    .stars-banner.empty { background: #fff0f0; border-color: #e00; color: #a00; }
+    .stars-banner.empty .stars-count { color: #e00; }
   </style>
 </head>
 <body>
+{% if user.is_authenticated %}
+  <div class="stars-banner{% if user.profile.stars == 0 %} empty{% endif %}">
+    &#9733; Stars left: <span class="stars-count">{{ user.profile.stars }}</span>
+    {% if user.profile.stars == 0 %}&nbsp;— you have no stars left to like posts{% endif %}
+  </div>
+{% endif %}
 <nav>
   <a href="{% url 'posts:index' %}"><strong>Yatube</strong></a>
   {% if user.is_authenticated %}
     <a href="{% url 'posts:post_create' %}">+ Post</a>
     <a href="{% url 'posts:profile' user.username %}">{{ user.username }}</a>
-    <span>&#9733; {{ user.profile.stars }}</span>
     <a href="{% url 'users:logout' %}">Logout</a>
   {% else %}
     <a href="{% url 'users:login' %}">Login</a>
