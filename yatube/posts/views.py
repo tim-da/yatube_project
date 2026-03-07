@@ -209,6 +209,25 @@ def add_comment(request, post_id):
     return redirect('posts:post_detail', post_id=post_id)
 
 
+def feed(request):
+    posts = (
+        Post.objects
+        .select_related('author', 'group')
+        .annotate(likes_count=Count('likes'))
+        .order_by('-pub_date', 'pk')
+    )
+    paginator = Paginator(posts, POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    liked_post_ids, followed_author_ids, viewer_profile = _like_context(request, page_obj)
+    return render(request, 'posts/feed.html', {
+        'page_obj': page_obj,
+        'liked_post_ids': liked_post_ids,
+        'followed_author_ids': followed_author_ids,
+        'viewer_profile': viewer_profile,
+    })
+
+
 @login_required
 def follow_index(request):
     posts = Post.objects.filter(
