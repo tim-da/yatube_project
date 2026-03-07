@@ -192,12 +192,12 @@ def like_post(request, post_id):
         return redirect('posts:post_detail', post_id=post_id)
     changed = False
     with transaction.atomic():
-        profile = Profile.objects.select_for_update().get(user=request.user)
-        is_following = Follow.objects.filter(
+        is_following = Follow.objects.select_for_update().filter(
             user=request.user, author=post.author
         ).exists()
         if not is_following:
             return redirect('posts:post_detail', post_id=post_id)
+        profile = Profile.objects.select_for_update().get(user=request.user)
         already_liked = Like.objects.filter(user=request.user, post=post).exists()
         if not already_liked and profile.stars > 0:
             try:
