@@ -216,7 +216,10 @@ def authors(request):
         .annotate(total_stars=Count('posts__likes'))
         .order_by('-total_stars', 'username')
     )
-    return render(request, 'posts/authors.html', {'users': users})
+    paginator = Paginator(users, POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'posts/authors.html', {'page_obj': page_obj})
 
 
 def feed(request):

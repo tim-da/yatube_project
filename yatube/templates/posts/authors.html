@@ -5,7 +5,7 @@
 {% block content %}
   <h2 style="margin-bottom:16px;">Авторы</h2>
   <div style="display:flex; flex-direction:column; gap:12px;">
-    {% for author in users %}
+    {% for author in page_obj %}
       <a href="{% url 'posts:profile' author.username %}" style="text-decoration:none; color:inherit;">
         <div class="card" style="display:flex; align-items:center; gap:16px; padding:16px; cursor:pointer;">
           {% if author.profile.avatar %}
@@ -33,4 +33,6 @@
       <p>Пользователей пока нет.</p>
     {% endfor %}
   </div>
+
+  {% include 'includes/paginator.html' %}
 {% endblock %}
