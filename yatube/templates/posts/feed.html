@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Лента{% endblock %}
+
+{% block content %}
+  <h2 style="margin-bottom:16px;">Лента — все записи</h2>
+  {% for post in page_obj %}
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div class="meta">
+          <a href="{% url 'posts:profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
+          · {{ post.pub_date|date:"d.m.Y" }}
+          {% if post.group %}· <a href="{% url 'posts:group_list' post.group.slug %}">{{ post.group.title }}</a>{% endif %}
+        </div>
+        <span style="color:#b8860b; font-weight:bold; white-space:nowrap; margin-left:12px;">&#9733; {{ post.likes_count }}</span>
+      </div>
+      {% if post.image %}
+        <img src="{{ post.image.url }}" alt="Изображение" class="post-image">
+      {% endif %}
+      <h3 style="margin-top:10px;">
+        <a href="{% url 'posts:post_detail' post.pk %}">{{ post.text|truncatechars:150 }}</a>
+      </h3>
+      {% if user.is_authenticated and user != post.author %}
+        <div style="margin-top:10px;">
+          {% if post.pk in liked_post_ids %}
+            <form method="post" action="{% url 'posts:unlike_post' post.pk %}" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-secondary btn-sm">&#9733; Убрать лайк</button>
+            </form>
+          {% elif post.author_id in followed_author_ids %}
+            <form method="post" action="{% url 'posts:like_post' post.pk %}" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm"
+                {% if viewer_profile and viewer_profile.stars == 0 %}disabled title="Звёзды закончились"{% endif %}>
+                &#9733; Лайк
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p>Записей пока нет.</p>
+  {% endfor %}
+
+  {% include 'includes/paginator.html' %}
+{% endblock %}
