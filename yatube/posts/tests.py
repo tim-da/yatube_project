@@ -444,8 +444,8 @@ class PaginatorTest(TestCase):
 
     def test_first_page_has_10_posts(self):
         response = self.client.get(reverse('posts:index'))
-        self.assertEqual(len(response.context['page_obj']), 10)
+        self.assertEqual(response.content.count(b'class="card"'), 10)
 
     def test_second_page_has_3_posts(self):
         response = self.client.get(reverse('posts:index') + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), 3)
+        self.assertEqual(response.content.count(b'class="card"'), 3)

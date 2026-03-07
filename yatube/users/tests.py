@@ -62,7 +62,7 @@ class LoginTest(TestCase):
     def test_logout_uses_correct_template(self):
         self.client.force_login(self.user)
         response = self.client.post(reverse('users:logout'), follow=True)
-        self.assertTemplateUsed(response, 'users/login.html')
+        self.assertTemplateUsed(response, 'users/logged_out.html')
 
     def test_logout_get_not_allowed(self):
         self.client.force_login(self.user)

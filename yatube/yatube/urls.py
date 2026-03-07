@@ -14,5 +14,5 @@ urlpatterns = [
     path('', include('posts.urls', namespace='posts')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Keep media URLs routable in environments without an external media proxy.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

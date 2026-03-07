@@ -134,3 +134,4 @@ dmypy.json
 # Local generated docs/assets
 output/pdf/*.pdf
 tmp/pdfs/*.png
+tmp/
