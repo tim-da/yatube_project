@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
-{% block title %}Login{% endblock %}
+
+{% block title %}Войти{% endblock %}
+
 {% block content %}
-<h2>Login</h2>
-<form method="post">
-  {% csrf_token %}
-  {% for field in form %}
-    <label>{{ field.label }}</label>
-    {{ field }}
-    {% if field.errors %}<span class="error">{{ field.errors }}</span>{% endif %}
-  {% endfor %}
-  <button type="submit" class="btn btn-primary">Login</button>
-</form>
-<p>No account? <a href="{% url 'users:register' %}">Register</a></p>
+  <div class="card">
+    <h2>Войти</h2>
+    <form method="post" style="margin-top:16px;">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn">Войти</button>
+    </form>
+    <p style="margin-top:12px;">Нет аккаунта? <a href="{% url 'users:signup' %}">Зарегистрироваться</a></p>
+  </div>
 {% endblock %}

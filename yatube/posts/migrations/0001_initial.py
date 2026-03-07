@@ -14,98 +14,25 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="Post",
+            name='Group',
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                ("text", models.TextField()),
-                ("image", models.ImageField(blank=True, null=True, upload_to="posts/")),
-                ("pub_date", models.DateTimeField(auto_now_add=True)),
-                (
-                    "author",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="posts",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=200)),
+                ('slug', models.SlugField(unique=True)),
+                ('description', models.TextField()),
             ],
-            options={
-                "ordering": ["-pub_date"],
-            },
         ),
         migrations.CreateModel(
-            name="Like",
+            name='Post',
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                ("created", models.DateTimeField(auto_now_add=True)),
-                (
-                    "post",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="likes",
-                        to="posts.post",
-                    ),
-                ),
-                (
-                    "user",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="likes_given",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('text', models.TextField()),
+                ('pub_date', models.DateTimeField(auto_now_add=True)),
+                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='posts', to=settings.AUTH_USER_MODEL)),
+                ('group', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='posts', to='posts.Group')),
             ],
             options={
-                "unique_together": {("user", "post")},
-            },
-        ),
-        migrations.CreateModel(
-            name="Follow",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                (
-                    "author",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="followers",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "user",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="following",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-            ],
-            options={
-                "unique_together": {("user", "author")},
+                'ordering': ['-pub_date'],
             },
         ),
     ]

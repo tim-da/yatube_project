@@ -1,47 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Yatube{% endblock %}</title>
   <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 1rem; }
-    nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ccc; }
-    nav a { text-decoration: none; color: #333; }
-    .post { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
-    .post-meta { color: #888; font-size: 0.85rem; margin-bottom: 0.5rem; }
-    .stars-badge { display: inline-block; background: #ffd700; color: #333; border-radius: 12px; padding: 2px 10px; font-size: 0.85rem; font-weight: bold; }
-    .btn { display: inline-block; padding: 0.4rem 0.9rem; border-radius: 4px; border: none; cursor: pointer; text-decoration: none; font-size: 0.9rem; }
-    .btn-primary { background: #0070f3; color: white; }
-    .btn-danger { background: #e00; color: white; }
-    .btn-secondary { background: #eee; color: #333; }
-    form input, form textarea { width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; box-sizing: border-box; }
-    .error { color: red; font-size: 0.85rem; }
-    .post img { max-width: 100%; border-radius: 4px; margin: 0.5rem 0; }
-    .stars-banner { background: #fffbea; border-bottom: 1px solid #f0d000; padding: 0.5rem 1rem; text-align: center; font-size: 1rem; font-weight: bold; color: #7a5c00; }
-    .stars-banner .stars-count { font-size: 1.3rem; color: #b8860b; }
-    .stars-banner.empty { background: #fff0f0; border-color: #e00; color: #a00; }
-    .stars-banner.empty .stars-count { color: #e00; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
+    .navbar { background: #fff; border-bottom: 1px solid #ddd; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .navbar a { text-decoration: none; color: #333; font-weight: bold; font-size: 1.2rem; }
+    .nav-links a { margin-left: 16px; font-weight: normal; font-size: 0.95rem; color: #555; }
+    .nav-links a:hover { color: #000; }
+    .logout-form { display: inline; margin-left: 16px; }
+    .btn-link { border: none; background: none; padding: 0; margin: 0; font: inherit; color: #555; cursor: pointer; font-weight: normal; font-size: 0.95rem; }
+    .btn-link:hover { color: #000; }
+    .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 20px; margin-bottom: 16px; }
+    .card h3 a { text-decoration: none; color: #222; }
+    .card .meta { font-size: 0.85rem; color: #888; margin-top: 8px; }
+    .btn { display: inline-block; padding: 8px 16px; background: #007bff; color: #fff; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; font-size: 0.95rem; }
+    .btn:hover { background: #0056b3; }
+    .btn-secondary { background: #6c757d; }
+    .btn-secondary:hover { background: #545b62; }
+    .btn-danger { background: #dc3545; }
+    .btn-danger:hover { background: #b02a37; }
+    .pagination { display: flex; gap: 8px; margin-top: 24px; }
+    .pagination a, .pagination span { padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333; background: #fff; }
+    .pagination .current { background: #007bff; color: #fff; border-color: #007bff; }
+    form p { margin-bottom: 12px; }
+    form input, form textarea, form select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem; }
+    form label { display: block; margin-bottom: 4px; font-weight: bold; }
+    .errorlist { color: red; font-size: 0.85rem; list-style: none; }
+    .post-image { max-width: 100%; border-radius: 4px; margin-top: 12px; }
+    .comment { border-top: 1px solid #eee; padding-top: 12px; margin-top: 12px; }
+    .stars-banner { background: #fffbea; border-bottom: 1px solid #f0d000; padding: 6px 24px; font-size: 0.95rem; font-weight: bold; color: #7a5c00; text-align: center; }
+    .stars-banner .stars-count { font-size: 1.1rem; color: #b8860b; }
+    .stars-banner.empty { background: #fff0f0; border-color: #dc3545; color: #a00; }
+    .stars-banner.empty .stars-count { color: #dc3545; }
   </style>
 </head>
 <body>
 {% if user.is_authenticated %}
   <div class="stars-banner{% if user.profile.stars == 0 %} empty{% endif %}">
-    &#9733; Stars left: <span class="stars-count">{{ user.profile.stars }}</span>
-    {% if user.profile.stars == 0 %}&nbsp;— you have no stars left to like posts{% endif %}
+    &#9733; Осталось звёзд: <span class="stars-count">{{ user.profile.stars }}</span>
+    {% if user.profile.stars == 0 %}&nbsp;— звёзды закончились, лайки недоступны{% endif %}
   </div>
 {% endif %}
-<nav>
-  <a href="{% url 'posts:index' %}"><strong>Yatube</strong></a>
-  {% if user.is_authenticated %}
-    <a href="{% url 'posts:post_create' %}">+ Post</a>
-    <a href="{% url 'posts:profile' user.username %}">{{ user.username }}</a>
-    <a href="{% url 'users:logout' %}">Logout</a>
-  {% else %}
-    <a href="{% url 'users:login' %}">Login</a>
-    <a href="{% url 'users:register' %}">Register</a>
-  {% endif %}
-</nav>
-{% block content %}{% endblock %}
+  <nav class="navbar">
+    <a href="{% url 'posts:index' %}">Yatube</a>
+    <div class="nav-links">
+      {% if user.is_authenticated %}
+        <a href="{% url 'posts:follow_index' %}">Подписки</a>
+        <a href="{% url 'posts:post_create' %}">Новая запись</a>
+        <a href="{% url 'posts:profile' user.username %}">{{ user.username }}</a>
+        <form method="post" action="{% url 'users:logout' %}" class="logout-form">
+          {% csrf_token %}
+          <button type="submit" class="btn-link">Выйти</button>
+        </form>
+      {% else %}
+        <a href="{% url 'users:signup' %}">Регистрация</a>
+        <a href="{% url 'users:login' %}">Войти</a>
+      {% endif %}
+    </div>
+  </nav>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
 </body>
 </html>
