@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
@@ -19,11 +21,13 @@ INDEX_CACHE_VERSION_KEY = 'index_page_cache_version'
 
 
 def _get_index_cache_version():
-    return cache.get(INDEX_CACHE_VERSION_KEY, 1)
+    return cache.get(INDEX_CACHE_VERSION_KEY, 0)
 
 
 def _bump_index_cache_version():
-    current_version = cache.get(INDEX_CACHE_VERSION_KEY, 1)
+    if cache.add(INDEX_CACHE_VERSION_KEY, 1):
+        return
+    current_version = cache.get(INDEX_CACHE_VERSION_KEY, 0)
     cache.set(INDEX_CACHE_VERSION_KEY, current_version + 1)
 
 
@@ -33,7 +37,11 @@ def index(request):
     cache_key = f'index_post_list_v{cache_version}_p{page_number}'
     posts_fragment = cache.get(cache_key)
     if posts_fragment is None:
-        posts = Post.objects.select_related('author', 'group')
+        posts = (
+            Post.objects
+            .select_related('author', 'group')
+            .annotate(likes_count=Count('likes'))
+        )
         paginator = Paginator(posts, POSTS_PER_PAGE)
         page_obj = paginator.get_page(page_number)
         posts_fragment = render_to_string(
@@ -182,12 +190,21 @@ def like_post(request, post_id):
     ).exists()
     if not is_following:
         return redirect('posts:post_detail', post_id=post_id)
-    profile = request.user.profile
-    already_liked = Like.objects.filter(user=request.user, post=post).exists()
-    if not already_liked and profile.stars > 0:
-        Like.objects.create(user=request.user, post=post)
-        profile.stars -= 1
-        profile.save()
+    changed = False
+    with transaction.atomic():
+        profile = Profile.objects.select_for_update().get(user=request.user)
+        already_liked = Like.objects.filter(user=request.user, post=post).exists()
+        if not already_liked and profile.stars > 0:
+            try:
+                Like.objects.create(user=request.user, post=post)
+            except IntegrityError:
+                pass
+            else:
+                profile.stars -= 1
+                profile.save(update_fields=['stars'])
+                changed = True
+    if changed:
+        _bump_index_cache_version()
     return redirect('posts:post_detail', post_id=post_id)
 
 
@@ -195,11 +212,16 @@ def like_post(request, post_id):
 @require_POST
 def unlike_post(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    profile = request.user.profile
-    deleted, _ = Like.objects.filter(user=request.user, post=post).delete()
-    if deleted:
-        profile.stars += 1
-        profile.save()
+    changed = False
+    with transaction.atomic():
+        profile = Profile.objects.select_for_update().get(user=request.user)
+        deleted, _ = Like.objects.filter(user=request.user, post=post).delete()
+        if deleted:
+            profile.stars += deleted
+            profile.save(update_fields=['stars'])
+            changed = True
+    if changed:
+        _bump_index_cache_version()
     return redirect('posts:post_detail', post_id=post_id)
 
 
