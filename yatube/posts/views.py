@@ -214,7 +214,7 @@ def feed(request):
         Post.objects
         .select_related('author', 'group')
         .annotate(likes_count=Count('likes'))
-        .order_by('-pub_date', 'pk')
+        .order_by('-pub_date', '-pk')
     )
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
