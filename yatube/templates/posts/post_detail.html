@@ -14,7 +14,7 @@
     {% endif %}
     <p style="margin-top:16px; font-size:1.05rem; line-height:1.6;">{{ post.text }}</p>
     <div style="margin-top:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <span style="font-size:1.1rem; font-weight:bold; color:#b8860b;">&#9733; {{ post.likes.count }}</span>
+      <span style="font-size:1.1rem; font-weight:bold; color:#b8860b;">&#9733; {{ post.likes_count }}</span>
       {% if user.is_authenticated and user != post.author %}
         {% if user_liked %}
           <form method="post" action="{% url 'posts:unlike_post' post.pk %}" style="margin:0;">
@@ -25,7 +25,7 @@
           <form method="post" action="{% url 'posts:like_post' post.pk %}" style="margin:0;">
             {% csrf_token %}
             <button type="submit" class="btn"
-              {% if user.profile.stars == 0 %}disabled title="Звёзды закончились"{% endif %}>
+              {% if viewer_profile and viewer_profile.stars == 0 %}disabled title="Звёзды закончились"{% endif %}>
               &#9733; Лайк (−1 звезда)
             </button>
           </form>
