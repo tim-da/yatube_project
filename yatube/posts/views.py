@@ -89,22 +89,27 @@ def profile(request, username):
 
 
 def post_detail(request, post_id):
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(
+        Post.objects.annotate(likes_count=Count('likes')),
+        pk=post_id,
+    )
     comments = post.comments.select_related('author')
     form = CommentForm()
-    user_liked = (
-        request.user.is_authenticated
-        and Like.objects.filter(user=request.user, post=post).exists()
-    )
-    is_following = (
-        request.user.is_authenticated
-        and post.author != request.user
-        and Follow.objects.filter(user=request.user, author=post.author).exists()
-    )
+    viewer_profile = None
+    user_liked = False
+    is_following = False
+    if request.user.is_authenticated:
+        viewer_profile = Profile.objects.filter(user=request.user).first()
+        user_liked = Like.objects.filter(user=request.user, post=post).exists()
+        is_following = (
+            post.author != request.user
+            and Follow.objects.filter(user=request.user, author=post.author).exists()
+        )
     return render(request, 'posts/post_detail.html', {
         'post': post,
         'comments': comments,
         'form': form,
+        'viewer_profile': viewer_profile,
         'user_liked': user_liked,
         'is_following': is_following,
     })
@@ -185,14 +190,14 @@ def like_post(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if post.author == request.user:
         return redirect('posts:post_detail', post_id=post_id)
-    is_following = Follow.objects.filter(
-        user=request.user, author=post.author
-    ).exists()
-    if not is_following:
-        return redirect('posts:post_detail', post_id=post_id)
     changed = False
     with transaction.atomic():
         profile = Profile.objects.select_for_update().get(user=request.user)
+        is_following = Follow.objects.filter(
+            user=request.user, author=post.author
+        ).exists()
+        if not is_following:
+            return redirect('posts:post_detail', post_id=post_id)
         already_liked = Like.objects.filter(user=request.user, post=post).exists()
         if not already_liked and profile.stars > 0:
             try:
