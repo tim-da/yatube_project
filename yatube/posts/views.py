@@ -209,6 +209,16 @@ def add_comment(request, post_id):
     return redirect('posts:post_detail', post_id=post_id)
 
 
+def authors(request):
+    users = (
+        User.objects
+        .prefetch_related('profile')
+        .annotate(total_stars=Count('posts__likes'))
+        .order_by('-total_stars', 'username')
+    )
+    return render(request, 'posts/authors.html', {'users': users})
+
+
 def feed(request):
     posts = (
         Post.objects

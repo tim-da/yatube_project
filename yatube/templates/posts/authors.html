@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Авторы{% endblock %}
+
+{% block content %}
+  <h2 style="margin-bottom:16px;">Авторы</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    {% for author in users %}
+      <a href="{% url 'posts:profile' author.username %}" style="text-decoration:none; color:inherit;">
+        <div class="card" style="display:flex; align-items:center; gap:16px; padding:16px; cursor:pointer;">
+          {% if author.profile.avatar %}
+            <img src="{{ author.profile.avatar.url }}" alt="Аватар"
+                 style="width:56px; height:56px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+          {% else %}
+            <div style="width:56px; height:56px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:#999; flex-shrink:0;">
+              {{ author.username|slice:":1"|upper }}
+            </div>
+          {% endif %}
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:bold; font-size:1rem;">
+              {{ author.get_full_name|default:author.username }}
+              {% if author.get_full_name %}
+                <span style="color:#888; font-weight:normal; font-size:0.9rem;">({{ author.username }})</span>
+              {% endif %}
+            </div>
+          </div>
+          <div style="white-space:nowrap; font-weight:bold; color:#b8860b; font-size:1rem;">
+            &#9733; {{ author.total_stars }}
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <p>Пользователей пока нет.</p>
+    {% endfor %}
+  </div>
+{% endblock %}
