@@ -129,7 +129,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Auth
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'posts:index'
-LOGOUT_REDIRECT_URL = 'posts:index'
 
 # Cache
 CACHES = {

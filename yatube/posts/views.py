@@ -19,15 +19,17 @@ INDEX_CACHE_VERSION_KEY = 'index_page_cache_version'
 
 
 def _get_index_cache_version():
-    return cache.get(INDEX_CACHE_VERSION_KEY, 1)
+    return cache.get(INDEX_CACHE_VERSION_KEY, 0)
 
 
 def _bump_index_cache_version():
+    if cache.add(INDEX_CACHE_VERSION_KEY, 1):
+        return
     try:
         cache.incr(INDEX_CACHE_VERSION_KEY)
     except (ValueError, TypeError):
-        # Key missing or not an int — bump from implicit 1 to 2
-        cache.set(INDEX_CACHE_VERSION_KEY, 2)
+        current_version = cache.get(INDEX_CACHE_VERSION_KEY, 0)
+        cache.set(INDEX_CACHE_VERSION_KEY, current_version + 1)
 
 
 def index(request):
@@ -152,15 +154,14 @@ def follow_index(request):
 
 
 @login_required
+@require_POST
 def post_delete(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if post.author != request.user:
         return redirect('posts:post_detail', post_id=post_id)
-    if request.method == 'POST':
-        post.delete()
-        _bump_index_cache_version()
-        return redirect('posts:profile', username=request.user.username)
-    return redirect('posts:post_detail', post_id=post_id)
+    post.delete()
+    _bump_index_cache_version()
+    return redirect('posts:profile', username=request.user.username)
 
 
 @login_required

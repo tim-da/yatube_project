@@ -397,9 +397,10 @@ class PostDeleteTest(TestCase):
     def test_get_request_does_not_delete(self):
         post_id = self.post.pk
         self.client.force_login(self.author)
-        self.client.get(
+        response = self.client.get(
             reverse('posts:post_delete', kwargs={'post_id': post_id})
         )
+        self.assertEqual(response.status_code, 405)
         self.assertTrue(Post.objects.filter(pk=post_id).exists())
 
 
