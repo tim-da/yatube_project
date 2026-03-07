@@ -15,6 +15,7 @@ class Profile(models.Model):
         upload_to='avatars/',
         blank=True,
     )
+    stars = models.PositiveIntegerField(default=1000)
 
     def __str__(self):
         return f'Профиль {self.user.username}'

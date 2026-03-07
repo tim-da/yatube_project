@@ -23,13 +23,8 @@ def _get_index_cache_version():
 
 
 def _bump_index_cache_version():
-    if cache.add(INDEX_CACHE_VERSION_KEY, 1):
-        return
-    try:
-        cache.incr(INDEX_CACHE_VERSION_KEY)
-    except ValueError:
-        current_version = cache.get(INDEX_CACHE_VERSION_KEY, 1)
-        cache.set(INDEX_CACHE_VERSION_KEY, current_version + 1)
+    current_version = cache.get(INDEX_CACHE_VERSION_KEY, 1)
+    cache.set(INDEX_CACHE_VERSION_KEY, current_version + 1)
 
 
 def index(request):
