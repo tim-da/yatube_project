@@ -4,17 +4,19 @@
 
 {% block content %}
   <div class="card">
-    <div class="meta">
-      <a href="{% url 'posts:profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
-      · {{ post.pub_date|date:"d.m.Y H:i" }}
-      {% if post.group %}· <a href="{% url 'posts:group_list' post.group.slug %}">{{ post.group.title }}</a>{% endif %}
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="meta">
+        <a href="{% url 'posts:profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
+        · {{ post.pub_date|date:"d.m.Y H:i" }}
+        {% if post.group %}· <a href="{% url 'posts:group_list' post.group.slug %}">{{ post.group.title }}</a>{% endif %}
+      </div>
+      <span style="font-size:1.1rem; font-weight:bold; color:#b8860b; white-space:nowrap; margin-left:12px;">&#9733; {{ post.likes_count }}</span>
     </div>
     {% if post.image %}
       <img src="{{ post.image.url }}" alt="Изображение" class="post-image">
     {% endif %}
     <p style="margin-top:16px; font-size:1.05rem; line-height:1.6;">{{ post.text }}</p>
     <div style="margin-top:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <span style="font-size:1.1rem; font-weight:bold; color:#b8860b;">&#9733; {{ post.likes_count }}</span>
       {% if user.is_authenticated and user != post.author %}
         {% if user_liked %}
           <form method="post" action="{% url 'posts:unlike_post' post.pk %}" style="margin:0;">
