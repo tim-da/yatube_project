@@ -61,6 +61,31 @@ class Comment(models.Model):
         return self.text[:15]
 
 
+class Like(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='likes_given',
+    )
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='likes',
+    )
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'post'],
+                name='unique_like',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user.username} → post#{self.post_id}'
+
+
 class Follow(models.Model):
     user = models.ForeignKey(
         User,

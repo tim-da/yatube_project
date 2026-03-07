@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
@@ -9,7 +11,7 @@ from django.views.decorators.http import require_POST
 from users.models import Profile
 
 from .forms import CommentForm, PostForm
-from .models import Follow, Group, Post
+from .models import Follow, Group, Like, Post
 
 User = get_user_model()
 
@@ -19,11 +21,13 @@ INDEX_CACHE_VERSION_KEY = 'index_page_cache_version'
 
 
 def _get_index_cache_version():
-    return cache.get(INDEX_CACHE_VERSION_KEY, 1)
+    return cache.get(INDEX_CACHE_VERSION_KEY, 0)
 
 
 def _bump_index_cache_version():
-    current_version = cache.get(INDEX_CACHE_VERSION_KEY, 1)
+    if cache.add(INDEX_CACHE_VERSION_KEY, 1):
+        return
+    current_version = cache.get(INDEX_CACHE_VERSION_KEY, 0)
     cache.set(INDEX_CACHE_VERSION_KEY, current_version + 1)
 
 
@@ -33,7 +37,11 @@ def index(request):
     cache_key = f'index_post_list_v{cache_version}_p{page_number}'
     posts_fragment = cache.get(cache_key)
     if posts_fragment is None:
-        posts = Post.objects.select_related('author', 'group')
+        posts = (
+            Post.objects
+            .select_related('author', 'group')
+            .annotate(likes_count=Count('likes'))
+        )
         paginator = Paginator(posts, POSTS_PER_PAGE)
         page_obj = paginator.get_page(page_number)
         posts_fragment = render_to_string(
@@ -84,10 +92,21 @@ def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     comments = post.comments.select_related('author')
     form = CommentForm()
+    user_liked = (
+        request.user.is_authenticated
+        and Like.objects.filter(user=request.user, post=post).exists()
+    )
+    is_following = (
+        request.user.is_authenticated
+        and post.author != request.user
+        and Follow.objects.filter(user=request.user, author=post.author).exists()
+    )
     return render(request, 'posts/post_detail.html', {
         'post': post,
         'comments': comments,
         'form': form,
+        'user_liked': user_liked,
+        'is_following': is_following,
     })
 
 
@@ -157,6 +176,52 @@ def post_delete(request, post_id):
         post.delete()
         _bump_index_cache_version()
         return redirect('posts:profile', username=request.user.username)
+    return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+@require_POST
+def like_post(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    if post.author == request.user:
+        return redirect('posts:post_detail', post_id=post_id)
+    is_following = Follow.objects.filter(
+        user=request.user, author=post.author
+    ).exists()
+    if not is_following:
+        return redirect('posts:post_detail', post_id=post_id)
+    changed = False
+    with transaction.atomic():
+        profile = Profile.objects.select_for_update().get(user=request.user)
+        already_liked = Like.objects.filter(user=request.user, post=post).exists()
+        if not already_liked and profile.stars > 0:
+            try:
+                Like.objects.create(user=request.user, post=post)
+            except IntegrityError:
+                pass
+            else:
+                profile.stars -= 1
+                profile.save(update_fields=['stars'])
+                changed = True
+    if changed:
+        _bump_index_cache_version()
+    return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+@require_POST
+def unlike_post(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    changed = False
+    with transaction.atomic():
+        profile = Profile.objects.select_for_update().get(user=request.user)
+        deleted, _ = Like.objects.filter(user=request.user, post=post).delete()
+        if deleted:
+            profile.stars += deleted
+            profile.save(update_fields=['stars'])
+            changed = True
+    if changed:
+        _bump_index_cache_version()
     return redirect('posts:post_detail', post_id=post_id)
 
 
